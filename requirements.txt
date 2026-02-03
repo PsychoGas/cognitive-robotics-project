@@ -1,4 +1,4 @@
-av>=11.0.0,<13.0.0
+av>=12.1.0,<14.0.0
 cbor2==5.8.0
 certifi==2026.1.4
 charset-normalizer==3.4.4
