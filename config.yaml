@@ -50,6 +50,7 @@ display:
   i2c_bus: 1                   # I²C bus number
   i2c_address: 0x3C            # Hexadecimal address (verified)
   contrast: 255                # Max brightness (0-255)
+  mood_duration: 10.0          # How long (seconds) to play mood animation after response
 
 # Recording behavior
 recording:

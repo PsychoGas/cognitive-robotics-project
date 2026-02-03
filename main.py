@@ -146,15 +146,12 @@ def main():
                     print(f">>> {response_text}")
                     print(f"[MOOD: {mood.upper()}]\n")
                     
-                    # Show text on top of animation (or instead of)
-                    # Note: show_text in our newer display.py handles the overlay/pause logic
-                    if display: display.show_text(response_text)
+                    # Sleep while the mood animation plays (duration from config)
+                    time.sleep(config["display"].get("mood_duration", 10.0))
                 else:
                     print("\n>>> (No speech detected)\n")
-                    if display: display.show_text("???")
                 
                 # Return to idle
-                time.sleep(1)
                 state = "IDLE"
                 if display: display.show_idle_face()
                 print("Ready for next command.")
