@@ -1,33 +1,36 @@
 import pyaudio
 
-def test_samplerate_on_devices():
+def test_all_devices():
     p = pyaudio.PyAudio()
-    print("\n--- Searching for a device that supports 16000Hz ---")
-    info = p.get_host_api_info_by_index(0)
-    num_devices = info.get('deviceCount')
+    print("\n--- Checking ALL devices for 16kHz Input Support ---")
     
-    target_rate = 16000
-    
-    for i in range(0, num_devices):
-        device_info = p.get_device_info_by_host_api_device_index(0, i)
-        name = device_info.get('name')
-        max_in = device_info.get('maxInputChannels')
+    for i in range(p.get_device_count()):
+        info = p.get_device_info_by_index(i)
+        name = info.get('name')
+        max_in = info.get('maxInputChannels')
         
-        if max_in > 0:
-            print(f"Index {i}: {name}")
+        # We check every device that has at least 1 input channel
+        if max_in >= 1:
+            print(f"Index {i}: {name} (Channels: {max_in})")
             try:
-                supported = p.is_format_supported(
-                    rate=target_rate,
-                    input_device=i,
-                    input_channels=1,
-                    input_format=pyaudio.paInt16
-                )
-                print(f"  [SUCCESS] Supports {target_rate}Hz natively or via ALSA plugin.")
+                # Check for mono (1 channel) at 16000Hz
+                # Porcupine requires specifically mono 16kHz
+                if p.is_format_supported(16000, input_device=i, input_channels=1, input_format=pyaudio.paInt16):
+                    print(f"  [SUCCESS] Supports 16000Hz (Mono)!")
+                else:
+                    print(f"  [FAILED] is_format_supported returned False.")
             except Exception as e:
-                print(f"  [FAILED] Does not support {target_rate}Hz: {e}")
+                # Check if maybe it supports it via stereo if mono fails
+                try:
+                    if p.is_format_supported(16000, input_device=i, input_channels=2, input_format=pyaudio.paInt16):
+                         print(f"  [HALF-SUCCESS] Supports 16000Hz but ONLY in Stereo (2 channels).")
+                    else:
+                         print(f"  [FAILED] 16000Hz not supported (tried Mono/Stereo): {e}")
+                except:
+                    print(f"  [FAILED] 16000Hz not supported: {e}")
             print("-" * 30)
             
     p.terminate()
 
 if __name__ == "__main__":
-    test_samplerate_on_devices()
+    test_all_devices()
