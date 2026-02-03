@@ -4,8 +4,8 @@ audio:
   channels: 1                  # Mono audio
   chunk_size: 512              # Porcupine frame length
   format: "int16"              # 16-bit signed integer
-  input_device_index: 2        # PyAudio Index 2: USB PnP Sound Device (Card 3)
-  output_device_index: 1       # PyAudio Index 1: Headphones (Card 2)
+  input_device_index: 5        # Use 'default' (configured in .asoundrc with plug)
+  output_device_index: 5       # Use 'default' (configured in .asoundrc with plug)
 
 # Porcupine wake word configuration
 wake_word:
