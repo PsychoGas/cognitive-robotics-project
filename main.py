@@ -29,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger("Main")
 
 def resolve_env_vars(config):
-    """Recursively replace \${VAR} with environment variables."""
+    r"""Recursively replace ${VAR} with environment variables."""
     if isinstance(config, dict):
         for k, v in config.items():
             config[k] = resolve_env_vars(v)
@@ -57,7 +57,12 @@ def main():
     
     # Initialize modules with error handling
     try:
-        display = DisplayController(config.get("display", {}))
+        try:
+            display = DisplayController(config.get("display", {}))
+        except Exception as e:
+            logger.warning(f"Display not initialized (likely not connected): {e}")
+            display = None
+            
         audio = AudioHandler(config.get("audio", {}))
         
         # Check for placeholder key
@@ -147,7 +152,7 @@ def main():
                 # Return to idle
                 time.sleep(1)
                 state = "IDLE"
-                display.show_idle_face()
+                if display: display.show_idle_face()
                 print("Ready for next command.")
                 
     except KeyboardInterrupt:
@@ -159,7 +164,7 @@ def main():
         logger.info("Cleaning up resources...")
         if 'audio' in locals(): audio.cleanup()
         if 'wake_word' in locals(): wake_word.cleanup()
-        if 'display' in locals(): 
+        if 'display' in locals() and display: 
             display.clear()
             display.cleanup()
         if 'stt' in locals(): stt.cleanup()
