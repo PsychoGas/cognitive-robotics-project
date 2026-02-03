@@ -7,7 +7,8 @@ Install the required system libraries for audio and video processing.
 
 ```bash
 sudo apt update
-sudo apt install -y python3-pip python3-venv portaudio19-dev libatlas-base-dev
+# Core audio and math libraries (if libatlas-base-dev fails, try libopenblas-dev)
+sudo apt install -y python3-pip python3-venv portaudio19-dev libopenblas-dev
 # Additional libraries for Faster-Whisper/Av
 sudo apt install -y pkg-config libavformat-dev libavcodec-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
 ```
