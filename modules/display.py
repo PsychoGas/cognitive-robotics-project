@@ -1,25 +1,31 @@
 from luma.core.interface.serial import i2c
 from luma.core.render import canvas
 from luma.oled.device import ssd1306
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
 import logging
 import time
+import os
+import threading
 
 class DisplayController:
     """
-    Controls the OLED display to show emotional faces and text.
-    Face states: idle, listening, thinking, speaking.
+    Controls the OLED display to show animated faces and text.
+    Uses GIF files from modules/animations/
     """
     
     def __init__(self, config: dict):
         """
-        Initialize OLED display via I²C.
-        
-        Args:
-            config: Display configuration from config.yaml
+        Initialize OLED display via I²C and setup animation thread.
         """
         self.logger = logging.getLogger("Display")
         self.config = config
+        self.animation_dir = os.path.join(os.path.dirname(__file__), "animations")
+        
+        # Animation thread control
+        self.current_animation = None
+        self.stop_event = threading.Event()
+        self.animation_thread = None
+        self.lock = threading.Lock()
         
         try:
             # I2C configuration
@@ -35,78 +41,130 @@ class DisplayController:
             
         except Exception as e:
             self.logger.error(f"Failed to initialize display: {e}")
-            # We don't raise here to allow headless operation if display fails
             self.device = None
 
-    def _draw_face(self, face_type: str):
-        """Helper to draw different faces"""
+    def _animation_loop(self, gif_path):
+        """Background thread to play GIF animation"""
+        try:
+            with Image.open(gif_path) as img:
+                # Pre-process frames for the display size
+                frames = []
+                for frame in ImageSequence.Iterator(img):
+                    # Convert to grayscale, resize/crop to fit display, convert to 1-bit
+                    # We preserve aspect ratio and center it
+                    f = frame.convert("RGBA").convert("L")
+                    # Scale to fit height
+                    scale = self.device.height / f.height
+                    new_size = (int(f.width * scale), self.device.height)
+                    f = f.resize(new_size, Image.Resampling.LANCZOS)
+                    
+                    # Create blank black image and center the frame
+                    canvas_img = Image.new("1", (self.device.width, self.device.height))
+                    left = (self.device.width - f.width) // 2
+                    canvas_img.paste(f.convert("1"), (left, 0))
+                    
+                    duration = frame.info.get('duration', 100) / 1000.0
+                    frames.append((canvas_img, duration))
+
+                while not self.stop_event.is_set():
+                    for frame_img, duration in frames:
+                        if self.stop_event.is_set():
+                            break
+                        with self.lock:
+                            if self.device:
+                                self.device.display(frame_img)
+                        time.sleep(duration)
+        except Exception as e:
+            self.logger.error(f"Animation loop error: {e}")
+
+    def play_animation(self, name: str):
+        """Start playing a specific GIF animation from the animations folder"""
         if not self.device:
+            self.logger.warning(f"Display not available, skipping animation: {name}")
             return
 
-        with canvas(self.device) as draw:
-            w, h = self.device.width, self.device.height
-            
-            if face_type == "idle":
-                # Sleeping/Idle face
-                draw.ellipse((30, 20, 40, 30), fill="white") # Left Eye
-                draw.ellipse((88, 20, 98, 30), fill="white") # Right Eye
-                draw.arc((44, 40, 84, 50), start=0, end=180, fill="white") # Smile
-                
-            elif face_type == "listening":
-                # Wide eyes
-                draw.ellipse((25, 15, 45, 35), outline="white") # Left Eye Open
-                draw.ellipse((83, 15, 103, 35), outline="white") # Right Eye Open
-                draw.ellipse((32, 22, 38, 28), fill="white") # Pupil
-                draw.ellipse((90, 22, 96, 28), fill="white") # Pupil
-                draw.line((54, 45, 74, 45), fill="white") # Straight mouth
-                
-            elif face_type == "thinking":
-                # Looking up/thinking
-                draw.arc((25, 20, 45, 30), start=180, end=360, fill="white") # Left Eye Closed/Thinking
-                draw.arc((83, 20, 103, 30), start=180, end=360, fill="white") # Right Eye Closed/Thinking
-                draw.line((50, 45, 78, 48), fill="white") # Crooked mouth
+        gif_path = os.path.join(self.animation_dir, f"{name}.gif")
+        if not os.path.exists(gif_path):
+            self.logger.error(f"Animation file not found: {gif_path}")
+            # Fallback to neutral if mood-based one missing
+            if name not in ["idle", "listening", "thinking"]:
+                self.play_animation("neutral")
+            return
+
+        if self.current_animation == name:
+            return
+
+        self.logger.info(f"Starting animation: {name}")
+        self.stop_animation()
+        
+        self.current_animation = name
+        self.stop_event.clear()
+        self.animation_thread = threading.Thread(target=self._animation_loop, args=(gif_path,), daemon=True)
+        self.animation_thread.start()
+
+    def stop_animation(self):
+        """Stop current animation thread"""
+        self.stop_event.set()
+        if self.animation_thread:
+            self.animation_thread.join(timeout=0.5)
+        self.current_animation = None
 
     def show_idle_face(self):
-        """Display smiling idle face 😊"""
-        self._draw_face("idle")
+        self.play_animation("idle")
 
     def show_listening_face(self):
-        """Display curious/attentive face 👂"""
-        self._draw_face("listening")
+        self.play_animation("listening")
 
     def show_thinking_face(self):
-        """Display processing/thinking face 🤔"""
-        self._draw_face("thinking")
+        self.play_animation("thinking")
+
+    def show_mood_face(self, mood: str):
+        """Map LLM mood to a specific animation"""
+        valid_moods = ["happy", "neutral", "sad", "excited", "thinking", "curious", "angry", "proud"]
+        mood = mood.lower() if mood else "neutral"
+        if mood not in valid_moods:
+            mood = "neutral"
+        self.play_animation(mood)
 
     def show_text(self, text: str, duration: float = 2.0):
-        """
-        Display text on screen (first few words).
-        
-        Args:
-            text: Text to display
-            duration: How long to show (seconds)
-        """
+        """Temporarily stop animation to show text, then resume"""
         if not self.device:
             return
-            
+        
+        prev_anim = self.current_animation
+        self.stop_animation()
+        
         try:
             with canvas(self.device) as draw:
-                # Basic text wrapping or truncation
                 font = ImageFont.load_default()
-                draw.text((0, 0), text[:50], font=font, fill="white")
+                # Simple multi-line wrap for 128x64
+                lines = []
+                words = text.split()
+                line = ""
+                for word in words:
+                    if len(line + word) < 20: # Approx chars per line
+                        line += word + " "
+                    else:
+                        lines.append(line)
+                        line = word + " "
+                lines.append(line)
+                
+                for i, l in enumerate(lines[:5]): # Max 5 lines
+                    draw.text((0, i*12), l, font=font, fill="white")
             
             if duration > 0:
                 time.sleep(duration)
-                
         except Exception as e:
             self.logger.error(f"Error displaying text: {e}")
+        
+        if prev_anim:
+            self.play_animation(prev_anim)
 
     def clear(self):
-        """Clear display (all pixels off)"""
+        self.stop_animation()
         if self.device:
             self.device.clear()
 
     def cleanup(self):
-        """Release display resources"""
         self.clear()
         self.logger.info("Display resources released")

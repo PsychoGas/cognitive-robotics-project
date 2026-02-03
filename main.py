@@ -110,8 +110,8 @@ def main():
                     state = "WAKE_DETECTED"
             
             elif state == "WAKE_DETECTED":
-                # Show listening face
-                display.show_listening_face()
+                # Show listening animation
+                if display: display.show_listening_face()
                 print("Listening...")
                 state = "LISTENING"
             
@@ -126,8 +126,8 @@ def main():
                 state = "PROCESSING"
             
             elif state == "PROCESSING":
-                # Show thinking face
-                display.show_thinking_face()
+                # Show thinking animation
+                if display: display.show_thinking_face()
                 print("Processing speech...")
                 
                 # Transcribe
@@ -139,15 +139,19 @@ def main():
                     response_text = llm_data["response"]
                     mood = llm_data["mood"]
                     
+                    # Show mood-based talking face
+                    if display: display.show_mood_face(mood)
+                    
                     print(f"\n[AI RESPONSE]")
                     print(f">>> {response_text}")
                     print(f"[MOOD: {mood.upper()}]\n")
                     
-                    # Show on display
-                    display.show_text(response_text)
+                    # Show text on top of animation (or instead of)
+                    # Note: show_text in our newer display.py handles the overlay/pause logic
+                    if display: display.show_text(response_text)
                 else:
                     print("\n>>> (No speech detected)\n")
-                    display.show_text("???")
+                    if display: display.show_text("???")
                 
                 # Return to idle
                 time.sleep(1)
