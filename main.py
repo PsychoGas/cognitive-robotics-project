@@ -12,6 +12,10 @@ from modules.audio_handler import AudioHandler
 from modules.speech_to_text import SpeechToText
 from modules.llm_handler import LLMHandler
 from modules.display import DisplayController
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -24,10 +28,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger("Main")
 
+def resolve_env_vars(config):
+    """Recursively replace \${VAR} with environment variables."""
+    if isinstance(config, dict):
+        for k, v in config.items():
+            config[k] = resolve_env_vars(v)
+    elif isinstance(config, list):
+        return [resolve_env_vars(v) for v in config]
+    elif isinstance(config, str) and config.startswith("${") and config.endswith("}"):
+        env_var = config[2:-1]
+        return os.getenv(env_var, config)
+    return config
+
 def load_config(path="config.yaml"):
     try:
         with open(path, 'r') as f:
-            return yaml.safe_load(f)
+            config = yaml.safe_load(f)
+            return resolve_env_vars(config)
     except Exception as e:
         logger.error(f"Failed to load config: {e}")
         sys.exit(1)

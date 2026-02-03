@@ -9,7 +9,7 @@ audio:
 
 # Porcupine wake word configuration
 wake_word:
-  access_key: "jHig6tCLWseAetQCUUex9iSBFdMbS0vQE9rJVUC6NgfeoctoxKZIzA=="  # Get from picovoice.ai
+  access_key: "${PORCUPINE_ACCESS_KEY}"  # Will be loaded from .env
   keyword: "computer"          # Options: computer, jarvis, alexa, etc.
   sensitivity: 0.5             # Range: 0.0-1.0 (higher = more sensitive)
   
@@ -24,7 +24,7 @@ stt:
   
 # Groq LLM configuration
 llm:
-  api_key: "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"
+  api_key: "${GROQ_API_KEY}"           # Will be loaded from .env
   model: "llama-3.1-70b-versatile"
   temperature: 0.7
   max_tokens: 150
