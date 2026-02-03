@@ -1,0 +1,44 @@
+# Audio device configuration (verified from arecord/aplay -l)
+audio:
+  sample_rate: 16000           # Whisper and Porcupine both use 16kHz
+  channels: 1                  # Mono audio
+  chunk_size: 512              # Porcupine frame length
+  format: "int16"              # 16-bit signed integer
+  input_device_index: 3        # Card 3: USB PnP Sound Device
+  output_device_index: 2       # Card 2: bcm2835 Headphones (3.5mm jack)
+
+# Porcupine wake word configuration
+wake_word:
+  access_key: "YOUR_PORCUPINE_ACCESS_KEY"  # Get from picovoice.ai
+  keyword: "computer"          # Options: computer, jarvis, alexa, etc.
+  sensitivity: 0.5             # Range: 0.0-1.0 (higher = more sensitive)
+  
+# Speech-to-Text configuration
+stt:
+  model: "tiny.en"             # Options: tiny.en, base.en, small.en
+  device: "cpu"                # Pi 4 uses CPU
+  compute_type: "int8"         # int8 for speed, float16 for accuracy
+  language: "en"               # English
+  beam_size: 5                 # Default beam search size
+  
+# OLED display configuration (verified with i2cdetect)
+display:
+  type: "ssd1306"              # Controller type (NOT sh1106)
+  width: 128                   # Screen width
+  height: 64                   # Screen height
+  i2c_bus: 1                   # I²C bus number
+  i2c_address: 0x3C            # Hexadecimal address (verified)
+  contrast: 255                # Max brightness (0-255)
+
+# Recording behavior
+recording:
+  max_duration: 5.0            # Maximum recording time (seconds)
+  silence_threshold: 500       # RMS threshold for silence detection
+  silence_duration: 1.5        # Seconds of silence before auto-stop
+  pre_buffer_duration: 0.5     # Seconds to keep before wake word
+
+# Logging
+logging:
+  level: "INFO"                # DEBUG, INFO, WARNING, ERROR
+  file: "logs/voice_assistant.log"
+  console: true
