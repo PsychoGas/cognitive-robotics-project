@@ -1,3 +1,4 @@
+
 # Audio device configuration (verified from arecord/aplay -l)
 audio:
   sample_rate: 16000           # Whisper and Porcupine both use 16kHz
