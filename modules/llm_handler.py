@@ -82,5 +82,8 @@ class LLMHandler:
                 return {"response": llm_output, "mood": "neutral"}
                 
         except Exception as e:
-            self.logger.error(f"LLM request failed: {e}")
+            if 'response' in locals() and hasattr(response, 'text'):
+                self.logger.error(f"LLM request failed: {e} - Response: {response.text}")
+            else:
+                self.logger.error(f"LLM request failed: {e}")
             return {"response": "Sorry, I had trouble connecting to my brain.", "mood": "sad"}
