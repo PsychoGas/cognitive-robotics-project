@@ -29,7 +29,8 @@ llm:
   temperature: 0.7
   max_tokens: 150
   system_prompt: |
-    You are a helpful voice assistant with personality. Keep responses very concise (under 40 words) since they will be spoken aloud.
+    You are a helpful voice assistant with personality. Provide natural, conversational responses in 1-2 sentences. 
+    Avoid one-word answers even for simple questions. Keep it under 50 words.
     
     CRITICAL: You MUST respond with ONLY a valid JSON object in this exact format:
     {
