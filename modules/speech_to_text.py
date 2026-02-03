@@ -23,6 +23,19 @@ class SpeechToText:
         device = config.get("device", "cpu")
         compute_type = config.get("compute_type", "int8")
         
+        # Check for Optimized Mode
+        self.optimized = config.get("OPTIMIZED_MODE", 0) == 1
+        
+        # Set hardware parameters
+        if self.optimized:
+            cpu_threads = 4
+            num_workers = 1
+            self.logger.info("OPTIMIZED_MODE is ON: Using 4 threads, 1 worker, beam_size 1")
+        else:
+            cpu_threads = config.get("cpu_threads", 0) # 0 lets faster-whisper decide
+            num_workers = config.get("num_workers", 1)
+            self.logger.info("OPTIMIZED_MODE is OFF: Using standard settings")
+
         self.logger.info(f"Loading Whisper model: {model_size} on {device} ({compute_type})")
         
         try:
@@ -30,6 +43,8 @@ class SpeechToText:
                 model_size, 
                 device=device, 
                 compute_type=compute_type,
+                cpu_threads=cpu_threads,
+                num_workers=num_workers,
                 download_root=os.path.join(os.path.expanduser("~"), ".cache/huggingface/hub")
             )
             self.logger.info("Whisper model loaded successfully")
@@ -53,12 +68,14 @@ class SpeechToText:
             
         try:
             # Convert audio bytes to numpy float32 array normalized to [-1, 1]
-            # faster-whisper expects float32
             audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+            
+            # Use optimized beam size if enabled
+            beam_size = 1 if self.optimized else self.config.get("beam_size", 5)
             
             segments, info = self.model.transcribe(
                 audio_np, 
-                beam_size=self.config.get("beam_size", 5),
+                beam_size=beam_size,
                 language=self.config.get("language", "en"),
                 vad_filter=True
             )

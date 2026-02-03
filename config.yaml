@@ -19,7 +19,8 @@ stt:
   device: "cpu"                # Pi 4 uses CPU
   compute_type: "int8"         # int8 for speed, float16 for accuracy
   language: "en"               # English
-  beam_size: 5                 # Default beam search size
+  OPTIMIZED_MODE: 1            # 1: Enable Pi 4 optimizations, 0: Standard mode
+  beam_size: 5                 # Standard beam size (will be 1 if OPTIMIZED_MODE is 1)
   
 # OLED display configuration (verified with i2cdetect)
 display:
