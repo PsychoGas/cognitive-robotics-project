@@ -19,7 +19,7 @@ class DisplayController:
         """
         self.logger = logging.getLogger("Display")
         self.config = config
-        self.animation_dir = os.path.join(os.path.dirname(__file__), "animations")
+        self.animation_dir = os.path.join(os.path.dirname(__file__), "animations", "clean")
         
         # Animation thread control
         self.current_animation = None
