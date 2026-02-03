@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from modules.wake_word import WakeWordDetector
 from modules.audio_handler import AudioHandler
 from modules.speech_to_text import SpeechToText
+from modules.llm_handler import LLMHandler
 from modules.display import DisplayController
 
 # Configure logging
@@ -56,6 +57,7 @@ def main():
         )
         
         stt = SpeechToText(config.get("stt", {}))
+        llm = LLMHandler(config.get("llm", {}))
         
     except Exception as e:
         logger.critical(f"Initialization failed: {e}")
@@ -110,12 +112,17 @@ def main():
                 text = stt.transcribe(audio_buffer)
                 
                 if text:
-                    # Print result
-                    print(f"\n>>> You said: {text}\n")
-                    logger.info(f"User said: {text}")
+                    # Feed to LLM
+                    llm_data = llm.generate_response(text)
+                    response_text = llm_data["response"]
+                    mood = llm_data["mood"]
                     
-                    # Show snippet on display
-                    display.show_text(text)
+                    print(f"\n[AI RESPONSE]")
+                    print(f">>> {response_text}")
+                    print(f"[MOOD: {mood.upper()}]\n")
+                    
+                    # Show on display
+                    display.show_text(response_text)
                 else:
                     print("\n>>> (No speech detected)\n")
                     display.show_text("???")

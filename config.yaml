@@ -22,6 +22,25 @@ stt:
   OPTIMIZED_MODE: 1            # 1: Enable Pi 4 optimizations, 0: Standard mode
   beam_size: 5                 # Standard beam size (will be 1 if OPTIMIZED_MODE is 1)
   
+# Groq LLM configuration
+llm:
+  api_key: "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"
+  model: "llama-3.1-70b-versatile"
+  temperature: 0.7
+  max_tokens: 150
+  system_prompt: |
+    You are a helpful voice assistant with personality. Keep responses very concise (under 40 words) since they will be spoken aloud.
+    
+    CRITICAL: You MUST respond with ONLY a valid JSON object in this exact format:
+    {
+      "response": "your actual response text here",
+      "mood": "emotion"
+    }
+    
+    The mood must be EXACTLY one of these values: happy, neutral, sad, excited, thinking, curious
+    
+    Do NOT include any text before or after the JSON. Do NOT use markdown code blocks. ONLY output the raw JSON object.
+  
 # OLED display configuration (verified with i2cdetect)
 display:
   type: "ssd1306"              # Controller type (NOT sh1106)
