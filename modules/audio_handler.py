@@ -29,6 +29,7 @@ class AudioHandler:
         self.format = pyaudio.paInt16
         self.channels = config.get("channels", 1)
         self.input_device = config.get("input_device_index", 3)
+        self.output_device = config.get("output_device_index", 3)
         
         # Validate device
         try:
@@ -37,6 +38,12 @@ class AudioHandler:
         except IOError:
             self.logger.error(f"No audio input device found at index {self.input_device}")
             # Potentially scan for devices or raise
+
+        try:
+            info = self.pa.get_device_info_by_index(self.output_device)
+            self.logger.info(f"Using output device: {info['name']}")
+        except IOError:
+            self.logger.error(f"No audio output device found at index {self.output_device}")
             
     def start_input_stream(self):
         """Start audio input stream from USB microphone"""
@@ -131,6 +138,36 @@ class AudioHandler:
             
         self.logger.info(f"Recording finished. captured {len(frames)} frames")
         return b''.join(frames)
+
+    def play_audio(self, audio_data, sample_rate: int, channels: int = 1):
+        """Play raw PCM audio through the configured output device."""
+        if audio_data is None:
+            return
+
+        if isinstance(audio_data, np.ndarray):
+            if audio_data.dtype != np.int16:
+                audio_data = np.clip(audio_data, -1.0, 1.0)
+                audio_data = (audio_data * 32767).astype(np.int16)
+            audio_bytes = audio_data.tobytes()
+        elif isinstance(audio_data, bytes):
+            audio_bytes = audio_data
+        else:
+            self.logger.error("Unsupported audio data type for playback")
+            return
+
+        try:
+            stream = self.pa.open(
+                format=pyaudio.paInt16,
+                channels=channels,
+                rate=sample_rate,
+                output=True,
+                output_device_index=self.output_device
+            )
+            stream.write(audio_bytes)
+            stream.stop_stream()
+            stream.close()
+        except Exception as e:
+            self.logger.error(f"Failed to play audio: {e}")
     
     def cleanup(self):
         """Terminate PyAudio"""

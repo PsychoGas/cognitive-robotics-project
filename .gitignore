@@ -11,3 +11,4 @@ venv/
 Thumbs.db
 
 test_recording.wav
+models/

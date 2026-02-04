@@ -12,6 +12,7 @@ from modules.audio_handler import AudioHandler
 from modules.speech_to_text import SpeechToText
 from modules.llm_handler import LLMHandler
 from modules.display import DisplayController
+from modules.tts_handler import TTSHandler
 from dotenv import load_dotenv
 
 # Load environment variables from .env
@@ -80,6 +81,7 @@ def main():
         
         stt = SpeechToText(config.get("stt", {}))
         llm = LLMHandler(config.get("llm", {}))
+        tts = TTSHandler(config.get("tts", {}), audio)
         
     except Exception as e:
         logger.critical(f"Initialization failed: {e}")
@@ -146,8 +148,12 @@ def main():
                     print(f">>> {response_text}")
                     print(f"[MOOD: {mood.upper()}]\n")
                     
-                    # Sleep while the mood animation plays (duration from config)
-                    time.sleep(config["display"].get("mood_duration", 10.0))
+                    # Speak response while mood animation plays
+                    spoken = False
+                    if 'tts' in locals() and tts and tts.available:
+                        spoken = tts.speak(response_text)
+                    if not spoken:
+                        time.sleep(config["display"].get("mood_duration", 10.0))
                 else:
                     print("\n>>> (No speech detected)\n")
                 
@@ -169,6 +175,7 @@ def main():
             display.clear()
             display.cleanup()
         if 'stt' in locals(): stt.cleanup()
+        if 'tts' in locals(): tts.cleanup()
         print("Goodbye!")
 
 if __name__ == "__main__":

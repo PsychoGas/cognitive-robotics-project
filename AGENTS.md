@@ -42,6 +42,17 @@ From `setup_instructions.md` and `ACTION_REQUIRED.md`:
   libavcodec-dev libavdevice-dev libavutil-dev libswscale-dev \
   libswresample-dev libavfilter-dev`
 
+### TTS dependencies
+Text-to-speech uses sherpa-onnx with VITS models and an espeak-ng fallback.
+
+- `pip install sherpa-onnx`
+- `sudo apt install -y espeak-ng`
+
+Model download (store under `models/tts/`, gitignored):
+
+- `wget https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-en_US-lessac-medium.tar.bz2`
+- `tar xjf vits-piper-en_US-lessac-medium.tar.bz2`
+
 ## Code style guidelines
 Follow existing conventions in `main.py` and `modules/`.
 
