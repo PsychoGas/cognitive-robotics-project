@@ -64,8 +64,8 @@ tts:
 # Recording behavior
 recording:
   max_duration: 10.0           # Maximum recording time (seconds)
-  silence_threshold: 500       # RMS threshold for silence detection
-  silence_duration: 1.5        # Seconds of silence before auto-stop
+  silence_threshold: 600       # RMS threshold for silence detection
+  silence_duration: 0.8        # Seconds of silence before auto-stop
   pre_buffer_duration: 0.5     # Seconds to keep before wake word
 
 # Logging
