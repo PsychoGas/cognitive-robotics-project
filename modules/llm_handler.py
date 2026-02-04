@@ -20,6 +20,8 @@ class LLMHandler:
         self.api_key = config.get("api_key")
         self.model = config.get("model", "llama-3.1-70b-versatile")
         self.url = "https://api.groq.com/openai/v1/chat/completions"
+        self.max_history = config.get("max_history", 5)
+        self.history = []
         
     def generate_response(self, text: str) -> dict:
         """
@@ -39,18 +41,13 @@ class LLMHandler:
             "Content-Type": "application/json"
         }
         
+        messages = [{"role": "system", "content": self.config.get("system_prompt", "")}]
+        messages.extend(self.history)
+        messages.append({"role": "user", "content": text})
+
         payload = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": self.config.get("system_prompt", "")
-                },
-                {
-                    "role": "user",
-                    "content": text
-                }
-            ],
+            "messages": messages,
             "temperature": self.config.get("temperature", 0.7),
             "max_tokens": self.config.get("max_tokens", 150)
         }
@@ -75,6 +72,11 @@ class LLMHandler:
                     mood = "neutral"
                     
                 self.logger.info(f"LLM Response: {response_text} [MOOD: {mood}]")
+                self.history.append({"role": "user", "content": text})
+                self.history.append({"role": "assistant", "content": response_text})
+                # Trim to last N exchanges (2 messages per exchange)
+                if len(self.history) > self.max_history * 2:
+                    self.history = self.history[-(self.max_history * 2):]
                 return {"response": response_text, "mood": mood}
                 
             except json.JSONDecodeError:

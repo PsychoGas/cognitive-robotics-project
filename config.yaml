@@ -29,6 +29,7 @@ llm:
   model: "llama-3.3-70b-versatile"
   temperature: 0.7
   max_tokens: 150
+  max_history: 5                 # Number of past exchanges to keep for context
   system_prompt: |
     You are an expressive and helpful voice assistant. Provide natural, conversational responses in 1-2 sentences. 
     Avoid one-word answers. Keep it under 50 words.
