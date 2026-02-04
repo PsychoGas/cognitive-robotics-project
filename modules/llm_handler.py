@@ -70,7 +70,7 @@ class LLMHandler:
                 mood = parsed.get("mood", "neutral")
                 
                 # Basic validation
-                valid_moods = ["happy", "neutral", "sad", "excited", "thinking", "curious"]
+                valid_moods = ["happy", "neutral", "sad", "excited", "thinking", "curious", "angry", "proud"]
                 if mood not in valid_moods:
                     mood = "neutral"
                     
